@@ -94,7 +94,7 @@ class Publisher(Base):
 # region 2. korak - kreiranje baze s tablicama
 
 #kreiramo stroj koji ce nam omoguciti da se povezemo s bazom
-db_engine = create_engine("sqlite:///db_files/book_store1.db")
+db_engine = create_engine("sqlite:///db_files/book_store5.db")
 Base.metadata.create_all(db_engine)
 
 #endregion
@@ -159,12 +159,13 @@ def add_new_book(book_title,
 
     if publisher == None: 
         publisher = Publisher(name = publisher_name)
-        list(publisher.authors).append(author)
         session.add(publisher)
+        publisher.authors.append(author)
+        
        
     
     book.author = author
-    list(book.publishers).append(publisher)
+    book.publishers.append(publisher)
     session.add(book)
 
 
@@ -175,13 +176,19 @@ def get_authors(session):
     return session.query(Author).order_by(Author.last_name).all()
 
 books = [
-        ["Isaac Asimov", "Foundation", "Random House"],
-        ["Stephen King", "It", "Random House"],
-        ["Stephen King", "It", "Penguin"],
-        ["Tom Clancy", "Patriot Games", "Simon & Schuster"],
-        ["John Le Carre", "Tinker", "Berkley"], 
-        ["Thomas Mann", "Magic Mountain", "Penguin"]
-]
+        ["Isaac Asimov","Foundation","Random House"],
+        ["Pearl Buck","The Good Earth","Random House"],
+        ["Pearl Buck","The Good Earth","Simon & Schuster"],
+        ["Tom Clancy","The Hunt For Red October","Berkley"],
+        ["Tom Clancy","Patriot Games","Simon & Schuster"],
+        ["Stephen King","It","Random House"],
+        ["Stephen King","It","Penguin Random House"],
+        ["Stephen King","Dead Zone","Random House"],
+        ["Stephen King","The Shining","Penguin Random House"],
+        ["John Le Carre","Tinker, Tailor, Soldier, Spy: A George Smiley Novel","Berkley"],
+        ["Alex Michaelides","The Silent Patient","Simon & Schuster"],
+        ["Carol Shaben","Into The Abyss","Simon & Schuster"]
+    ]
 
 for new_book in books: 
     add_new_book(
