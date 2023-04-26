@@ -36,8 +36,8 @@ author_publisher = Table(
     "authors_publishers",
     Base.metadata,     ## povezujemo tablicu s SQLAlchemy da mozemo raditi s njom
     Column("id", Integer, primary_key=True),
-    Column("author.id", Integer, ForeignKey("authors.id")),
-    Column("publisher.id", Integer, ForeignKey("publishers.id"))
+    Column("author_id", Integer, ForeignKey("authors.id")),
+    Column("publisher_id", Integer, ForeignKey("publishers.id"))
 
 )
 
@@ -45,8 +45,8 @@ book_publisher = Table(
     "books_publishers", 
     Base.metadata, 
     Column("id", Integer, primary_key=True), 
-    Column("book.id", Integer, ForeignKey("books.id")), 
-    Column("publisher.id", Integer, ForeignKey("publishers.id"))
+    Column("book_id", Integer, ForeignKey("books.id")), 
+    Column("publisher_id", Integer, ForeignKey("publishers.id"))
 )
 
 class Author(Base):
@@ -63,6 +63,12 @@ class Author(Base):
 
     publishers = relationship("Publisher", secondary=author_publisher, back_populates="authors")
 
+
+    def __str__(self) -> str:
+        return f"{self.first_name} {self.last_name}"
+    
+    def __repr__(self) -> str:
+        return f"ID: {self.id} Ime: {self.first_name} Prezime: {self.last_name}"
 
 class Book(Base):
     __tablename__ = "books"
@@ -88,7 +94,7 @@ class Publisher(Base):
 # region 2. korak - kreiranje baze s tablicama
 
 #kreiramo stroj koji ce nam omoguciti da se povezemo s bazom
-db_engine = create_engine("sqlite:///db_files/book_store.db")
+db_engine = create_engine("sqlite:///db_files/book_store1.db")
 Base.metadata.create_all(db_engine)
 
 #endregion
@@ -102,58 +108,89 @@ session = Session()
 #endregion
 
 
-book_title = "The Stand"
-author_name = "Stephan King"
-publisher_name = "Random House Ltd."
-
-author_name_parts = author_name.split(" ")
-author_first_name = author_name_parts[0]
-author_last_name = author_name_parts[1]
-
-#moze i ovako: 
-#author_first_name, _, author_last_name = author_name.partition(" ")
-
-# ne mozemo nista dodati bez provjere u bazu!
-# ako vec postoji knjiga u bazi xx, autora yy i izdavaca zz, vratit će mi tu knjigu; ako nema, dobit cemo none
-book = (
-    session.query(Book)     #SELECT * FROM books
-    .join(Author)
-    .filter(Book.title == book_title)
-    .filter(
-    and_(Author.first_name == author_first_name, Author.last_name == author_last_name))
-    .filter(Book.publishers.any(Publisher.name == publisher_name))
-    .one_or_none()
-)
-
-# ako toga nema u bazi, idemo to kreirati
-if book == None: 
-    book = Book(title = book_title)
-
-author = (
-    session.query(Author)
-    .filter(and_(Author.first_name == author_first_name, Author.last_name == author_last_name))
-    .one_or_none()
-)
-
-if author == None: 
-    author = Author(first_name = author_first_name, last_name = author_last_name)
-    session.add(author)
+#book_title = "The Stand"
+#author_name = "Stephan King"
+#publisher_name = "Random House Ltd."
 
 
-publisher = (
-    session.query(Publisher)
-    .filter(Publisher.name == publisher_name)
-    .one_or_none
-)
+def add_new_book(book_title,
+                 author_name, 
+                 publisher_name):
+    
+    author_name_parts = str(author_name).split(" ")
+    author_first_name = author_name_parts[0]
+    author_last_name = author_name_parts[1]
 
-if publisher == None: 
-    publisher = Publisher(name = publisher_name)
-    publisher.authors.append(author)
-    session.add(publisher)
+    #moze i ovako: 
+    #author_first_name, _, author_last_name = author_name.partition(" ")
 
-book.author = author
-book.publishers.append(publisher)
-session.add(book)
+    # ne mozemo nista dodati bez provjere u bazu!
+    # ako vec postoji knjiga u bazi xx, autora yy i izdavaca zz, vratit će mi tu knjigu; ako nema, dobit cemo none
+    book = (
+        session.query(Book)     #SELECT * FROM books
+        .join(Author)
+        .filter(Book.title == book_title)
+        .filter(
+        and_(Author.first_name == author_first_name, Author.last_name == author_last_name))
+        .filter(Book.publishers.any(Publisher.name == publisher_name))
+        .one_or_none()
+    )
+
+    # ako toga nema u bazi, idemo to kreirati
+    if book == None: 
+        book = Book(title = book_title)
+
+    author = (
+        session.query(Author)
+        .filter(and_(Author.first_name == author_first_name, Author.last_name == author_last_name))
+        .one_or_none()
+    )
+
+    if author == None: 
+        author = Author(first_name = author_first_name, last_name = author_last_name)
+        session.add(author)
 
 
-session.commit()
+    publisher = (
+        session.query(Publisher)
+        .filter(Publisher.name == publisher_name)
+        .one_or_none()
+    )
+
+    if publisher == None: 
+        publisher = Publisher(name = publisher_name)
+        list(publisher.authors).append(author)
+        session.add(publisher)
+       
+    
+    book.author = author
+    list(book.publishers).append(publisher)
+    session.add(book)
+
+
+    session.commit()
+
+
+def get_authors(session):
+    return session.query(Author).order_by(Author.last_name).all()
+
+books = [
+        ["Isaac Asimov", "Foundation", "Random House"],
+        ["Stephen King", "It", "Random House"],
+        ["Stephen King", "It", "Penguin"],
+        ["Tom Clancy", "Patriot Games", "Simon & Schuster"],
+        ["John Le Carre", "Tinker", "Berkley"], 
+        ["Thomas Mann", "Magic Mountain", "Penguin"]
+]
+
+for new_book in books: 
+    add_new_book(
+        new_book[1],
+        new_book[0],
+        new_book[2]
+    )
+
+
+authors = get_authors(session)
+for author_entity in authors:
+    print(repr(author_entity))
