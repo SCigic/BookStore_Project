@@ -94,7 +94,7 @@ class Publisher(Base):
 # region 2. korak - kreiranje baze s tablicama
 
 #kreiramo stroj koji ce nam omoguciti da se povezemo s bazom
-db_engine = create_engine("sqlite:///db_files/book_store5.db")
+db_engine = create_engine("sqlite:///db_files/book_store1.db")
 Base.metadata.create_all(db_engine)
 
 #endregion
@@ -159,8 +159,9 @@ def add_new_book(book_title,
 
     if publisher == None: 
         publisher = Publisher(name = publisher_name)
-        session.add(publisher)
         publisher.authors.append(author)
+        session.add(publisher)
+        
         
        
     
